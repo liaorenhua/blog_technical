@@ -2,14 +2,23 @@ import { navbar } from "vuepress-theme-hope";
 
 export const zhNavbar = navbar([
   "/",
-  "/download/",
-  "/almanac/",
+
+  "/monitor-tuning/",
+  "/http-protocol/",
+  // 下载链接
+  // "/download/",
+    // 在线图鉴
+  // "/almanac/",
   "/guide/",
-  "/custom-level/",
-  "/instructions/",
-  "/contribution/",
-  "/devtool/",
-  { text: "在线游玩", link: "https://play.pvzge.com", icon: "circle-play" },
+  // 自定义关卡
+  // "/custom-level/",
+  // 协议和声明
+  // "/instructions/",
+
+  // "/contribution/",
+  // "/devtool/",
+  // { text: "在线游玩", link: "https://play.pvzge.com", icon: "circle-play" },
+
   // "/demo/",
   // {
   //   text: "指南",

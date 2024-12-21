@@ -1,13 +1,20 @@
 import { sidebar } from "vuepress-theme-hope";
 
 export const zhSidebar = sidebar({
-  "/download/": "structure",
+  "/monitor-tuning/": "structure",
+  "/http-protocol/": "structure",
+
+  // 下载链接
+  // "/download/": "structure",
   "/instructions/": "structure",
   "/guide/": "structure",
-  "/custom-level/": "structure",
-  "/contribution/": "structure",
-  "/devtool/": "structure",
-  "/almanac/": "structure",
+  // 协议和声明
+  // "/custom-level/": "structure",
+  // 用户社区
+  // "/contribution/": "structure",
+  // "/devtool/": "structure",
+  // "/almanac/": "structure",
+
   "/": [
     // "portfolio",
     // {

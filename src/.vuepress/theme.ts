@@ -16,9 +16,13 @@ export default hopeTheme({
   iconAssets: ["/assets/libs/font-awesome/css/all.min.css"],
 
   iconPrefix: "fas fa-",
-  favicon: "/favicon.ico",
+  // 廖仁华 修改网页icon
+  // favicon: "/favicon.ico",
+  favicon: "/favicon.png",
 
-  logo: "pvzg_nav.webp",
+  // 廖仁华
+  // logo: "pvzg_nav.webp",
+  logo: "leo_nav.png",
 
   repo: "Gzh0821/pvzg_site",
 
@@ -82,12 +86,13 @@ export default hopeTheme({
     "/": {
       // navbar
       navbar: zhNavbar,
-      navbarTitle: "PvZ2 Gardendless",
+      // 下面不要了 2024年12月21日
+      // navbarTitle: "PvZ2 Gardendless",
       // sidebar
       sidebar: zhSidebar,
-
-      footer: "《PvZ2 Gardendless》官方网站: pvzge.com",
-      copyright: "Copyright 2021-2024 <a href=\"https://gaozih.com\">Gaozih</a> © All Rights Reserved.",
+      // 廖仁华
+      footer: "CSDN: https://blog.csdn.net/liao_rh",
+      copyright: "Copyright 2024-2030 © All Rights Reserved.",
       displayFooter: true,
 
       // page meta

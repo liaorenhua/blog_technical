@@ -6,6 +6,10 @@ comment: false
 index: false
 ---
 
-<BiliBili bvid="BV1QLzdYmE8V"/>
+[//]: # (僵尸)
+[//]: # (<BiliBili bvid="BV1QLzdYmE8V"/>)
+
+友谊天地久
+<BiliBili bvid="BV1aJ411P7pJ"/>
 
 <Catalog />

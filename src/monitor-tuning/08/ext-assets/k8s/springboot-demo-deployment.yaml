@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: springboot-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: springboot-demo
+  template:
+    metadata:
+      labels:
+        app: springboot-demo
+    spec:
+      containers:
+        - name: springboot-demo
+          image: springboot-demo-image
+          imagePullPolicy: Never # 当前节点有镜像，则不拉取远程镜像
+          ports:
+            - containerPort: 8888 # 这里其实容器里面的jar包端口
