@@ -1,0 +1,72 @@
+// place your custom styles here
+@use 'sass:math';
+
+@font-face {
+    font-family: 'pvzgeFontEN';
+    src: url('/fonts/FBU-ENGRU.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'pvzgFont';
+    src: url('/fonts/FBUSV8C5EI.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'paris2024';
+    src: url('/fonts/Paris2024-Variable.woff2') format('woff2');
+    font-weight: 480;
+    font-style: normal;
+}
+
+#main-title {
+    font-family: 'paris2024', 'pvzgeFontEN', 'pvzgFont', "Noto Sans SC", "ZCOOL KuaiLe", "Roboto", "Arial", serif;
+}
+
+#main-description {
+    font-family: 'pvzgeFontEN', 'pvzgFont', "Noto Sans SC", "ZCOOL KuaiLe", "Roboto", "Arial", serif;
+}
+
+.vp-card-container {
+    font-family: 'paris2024', "ZCOOL KuaiLe", "Noto Sans SC", "Roboto", "Arial", serif;
+}
+
+.vp-site-name {
+    font-family: 'paris2024', 'pvzgeFontEN', 'pvzgFont', "Noto Sans SC", "ZCOOL KuaiLe", "Roboto", "Arial", serif;
+}
+
+div.video-container{
+    position: relative;
+    width: 100%;
+    height: 0;
+    padding-bottom: 56.25%;
+}
+
+iframe.youtube-video {
+    margin: 8px 0;
+    border-radius: 8px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+
+// For Christmas
+
+
+.vp-navbar {
+    background: linear-gradient(to bottom, #a9dff7, #ffffff);
+}
+
+[data-theme="dark"] .vp-navbar {
+    background: linear-gradient(to bottom, #1a237e, #4a148c);
+}
+
+.vp-navbar::before {
+    content: "❄";
+}
