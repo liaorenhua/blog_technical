@@ -1,6 +1,8 @@
 import { sidebar } from "vuepress-theme-hope";
 
 export const zhSidebar = sidebar({
+  // 廖仁华，若这里不配置，则又导航条触发显示页面，左边没有菜单的
+  "/database/": "structure",
   "/monitor-tuning/": "structure",
   "/http-protocol/": "structure",
 

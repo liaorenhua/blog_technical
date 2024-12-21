@@ -3,8 +3,46 @@ import { navbar } from "vuepress-theme-hope";
 export const zhNavbar = navbar([
   "/",
 
+  // 廖仁华 自定义新增导航条菜单
+  {
+    text: "数据库",
+    icon: "lightbulb",
+    /**
+     *  这里prefix值指向的是sidebar目录下里面的*.ts里面的key; 如果是英文的话类似: /en/guide/ 配置;
+     *  如果能指的到到时候显示左边会有菜单，否则没有菜单的
+     */
+    prefix: "/database/",
+    children: [
+      {
+        // text: "概述",
+        icon: "lightbulb",
+        prefix: "01/",  // database 目录的下一层: 01
+        children: [
+          { text: "概述", icon: "ellipsis", link: "" }
+        ],
+      },
+      {
+        // text: "redis",
+        icon: "lightbulb",
+        prefix: "02/",
+        children: [
+          { text: "Redis", icon: "ellipsis", link: "" }
+        ],
+      },
+      {
+        // text: "mysql",
+        icon: "lightbulb",
+        prefix: "03/",
+        children: [
+          { text: "Mysql", icon: "ellipsis", link: "" }
+        ],
+      },
+    ],
+  },
   "/monitor-tuning/",
   "/http-protocol/",
+
+
   // 下载链接
   // "/download/",
     // 在线图鉴
