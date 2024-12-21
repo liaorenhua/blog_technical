@@ -3,7 +3,7 @@ import { defineUserConfig } from "vuepress";
 import theme from "./theme.js";
 
 export default defineUserConfig({
-  base: "/",
+  base: "/blog_technical",
   pagePatterns: ['**/*.md', '!.vuepress', '!node_modules', '!components'],
   head: [
     ['script', {
