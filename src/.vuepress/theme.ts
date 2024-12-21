@@ -7,8 +7,10 @@ export default hopeTheme({
   hostname: "https://www.pvzge.com",
 
   author: {
-    name: "LMYY",
-    url: "https://gaozih.com",
+    // 廖仁华
+    name: "Leo",
+    // url: "https://gaozih.com",
+    url: "https://blog.csdn.net/liao_rh",
   },
 
   license: "Apache 2.0",
@@ -20,11 +22,13 @@ export default hopeTheme({
   // favicon: "/favicon.ico",
   favicon: "/favicon.png",
 
-  // 廖仁华
+  // 廖仁华 左上角logo
   // logo: "pvzg_nav.webp",
   logo: "leo_nav.png",
 
-  repo: "Gzh0821/pvzg_site",
+  // 仓库github显示
+  // 廖仁华 这里好像是拼接的；因为官网github仓库地址: https://github.com/Gzh0821/pvzg_site  这里注释了就不会显示了
+  // repo: "Gzh0821/pvzg_site",
 
   docsDir: "src",
 
@@ -86,7 +90,7 @@ export default hopeTheme({
     "/": {
       // navbar
       navbar: zhNavbar,
-      // 下面不要了 2024年12月21日
+      // 廖仁华 下面不要了 2024年12月21日  少个tile
       // navbarTitle: "PvZ2 Gardendless",
       // sidebar
       sidebar: zhSidebar,

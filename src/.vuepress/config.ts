@@ -30,6 +30,7 @@ export default defineUserConfig({
       title: "PvZ2 Gardendless Official Website",
       description: "Official website of PvZ2 Gardendless. PVZ2 Gardendless is a complete remastered, full PC platform of Plants vs. Zombies 2.",
     },
+    // 多语言在这里控制 廖仁华
     "/ru-RU/": {
       lang: "ru-RU",
       title: "PvZ2 Gardendless Официальный сайт",
