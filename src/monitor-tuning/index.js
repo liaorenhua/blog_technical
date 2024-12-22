@@ -85,6 +85,15 @@ module.exports = () => {
         '08/02.md',
         '08/03.md'
       ]
+    },
+    {
+      title: 'FQA',
+      path:'/monitor-tuning/09/',
+      collapsable: true,
+      children: [
+        '09/01.md',
+        '09/02.md'
+      ]
     }
   ]
 }
