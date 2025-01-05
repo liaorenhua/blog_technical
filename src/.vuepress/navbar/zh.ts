@@ -13,34 +13,81 @@ export const zhNavbar = navbar([
      */
     prefix: "/database/",
     children: [
+      // {
+      //   // text: "概述",
+      //   icon: "lightbulb",
+      //   prefix: "01/",  // database 目录的下一层: 01
+      //   children: [
+      //       // link: "" 这个链接为空导致左边菜单 不会因为这个子菜单有任何改变，他只会引用: database对应的无序菜单
+      //     { text: "概述", icon: "ellipsis", link: "" }
+      //   ],
+      // },
       {
-        // text: "概述",
+        text: "关系数据库",
         icon: "lightbulb",
-        prefix: "01/",  // database 目录的下一层: 01
+        // prefix: "02/",
         children: [
-          { text: "概述", icon: "ellipsis", link: "" }
+          { text: "Mysql", icon: "ellipsis", link: "01/" },
+          { text: "Redis", icon: "ellipsis", link: "02/" },
+          { text: "Mysql", icon: "ellipsis", link: "03/" },
         ],
       },
-      {
-        // text: "redis",
-        icon: "lightbulb",
-        prefix: "02/",
-        children: [
-          { text: "Redis", icon: "ellipsis", link: "" }
-        ],
-      },
-      {
-        // text: "mysql",
-        icon: "lightbulb",
-        prefix: "03/",
-        children: [
-          { text: "Mysql", icon: "ellipsis", link: "" }
-        ],
-      },
+      // {
+      //   // text: "mysql",
+      //   icon: "lightbulb",
+      //   prefix: "03/",
+      //   children: [
+      //     { text: "Mysql", icon: "ellipsis", link: "" }
+      //   ],
+      // },
     ],
   },
   "/monitor-tuning/",
   "/http-protocol/",
+  // 架构  如此样式，会左边菜单不会更改的，所以子菜单共用一个左边一个菜单
+  // {
+  //   text: "架构",
+  //   icon: "circle-down",
+  //   prefix: "/framework/",
+  //   children: [
+  //     {
+  //       text: "概述",
+  //       icon: "lightbulb",
+  //       prefix: "01/",  // database 目录的下一层: 01
+  //       children: [
+  //         { text: "概述", icon: "ellipsis", link: "/code/", activeMatch: "^/code/$"}
+  //       ],
+  //     },
+  //     {
+  //       text: "redis",
+  //       icon: "lightbulb",
+  //       prefix: "02/",
+  //       children: [
+  //         { text: "DDD", icon: "ellipsis", link: "" }
+  //       ],
+  //     },
+  //   ],
+  // },
+    // 这个样式是 左边菜单随着导航条变动
+  {
+    text: "系统架构",
+    icon: "code",
+    children: [
+      {
+        text: "笔记",
+        icon: "code",
+        children: ["/ddd/", "/linux/", "/code/"],
+      },
+      // {
+      //   // text: "产品设计",
+      //   children: ["/design/", "/linux/"],
+      // },
+      // {
+      //   // text: "后端运维",
+      //   children: ["/linux/"],
+      // },
+    ],
+  },
 
 
   // 下载链接
