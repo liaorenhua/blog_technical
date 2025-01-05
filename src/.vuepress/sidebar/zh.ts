@@ -1,7 +1,6 @@
 import { sidebar } from "vuepress-theme-hope";
 import {linux} from "./linux.js";
 import {ddd} from "./ddd.js";
-import {code} from "./code.js";
 
 export const zhSidebar = sidebar({
   // 廖仁华，若这里不配置，则又导航条触发显示页面，左边没有菜单的; 用structure导航下面所有子菜单左边目录都一样
@@ -11,7 +10,6 @@ export const zhSidebar = sidebar({
 
   // 代码笔记导航条 framework 下面的子菜单
   "/linux/": linux,
-  "/code/": code,
   "/ddd/": ddd,
 
   // 下载链接
