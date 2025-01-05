@@ -76,7 +76,7 @@ export const zhNavbar = navbar([
       {
         text: "笔记",
         icon: "code",
-        children: ["/ddd/", "/linux/", "/code/"],
+        children: ["/ddd/", "/linux/"],
       },
       // {
       //   // text: "产品设计",
