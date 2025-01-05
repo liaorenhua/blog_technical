@@ -23,7 +23,7 @@ export const zhNavbar = navbar([
       //   ],
       // },
       {
-        text: "关系数据库",
+        text: "关系数据库 ",
         icon: "lightbulb",
         // prefix: "02/",
         children: [
