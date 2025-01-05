@@ -3,7 +3,10 @@ import { defineUserConfig } from "vuepress";
 import theme from "./theme.js";
 
 export default defineUserConfig({
+  // 2025年1月5日  廖仁华 这里要发布到github这就要改为: blog_technical,代价就是显示的logo无效了
   base: "/blog_technical/",
+  // base: "/",
+
   pagePatterns: ['**/*.md', '!.vuepress', '!node_modules', '!components'],
   head: [
     ['script', {
