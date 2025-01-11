@@ -9,9 +9,9 @@ tag:
 
 ## 文章列表
 
-- [DDD](01.md)
+- [能做啥](01.md)
 
-- [格式塔原则](gestalt-principle.md)
+- [什么事领域驱动](02.md)
 
 - [布局中的左和右](left-or-right.md)
 

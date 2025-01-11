@@ -17,12 +17,13 @@ export const ddd = arraySidebar([
         ],
     },
     {
-        text: "文章",
+        text: "什么是DDD",
         icon: "note",
         prefix: "articles/",
         children: [
             "",
             "01",
+            "02",
             "gestalt-principle",
             "left-or-right",
             "infomation-flow"
