@@ -97,12 +97,12 @@ vi /home/liao/soft/datax/job/db2_to_mysql.json
           "name": "rdbmsreader",
           "parameter": {
             "username": "db2inst1",
-            "password": "liao",
+            "password": "xxxxxx",
             "column": ["id", "PROC_DATE", "CTR_NO","INV_CODE","INV_NO","BU_CODE","CREATE_TIME","CREATE_BY"],
             "where": "proc_date > '20251225'",
             "connection": [
               {
-                "jdbcUrl": ["jdbc:db2://192.168.42.12:60000/RWS_TEST"],
+                "jdbcUrl": ["jdbc:db2://xxx.xxx.xxx.xxx:60000/RWS_TEST"],
                 "table": ["EWSAPP.IN_INVOICE_HIS"]
               }
             ]
@@ -112,7 +112,7 @@ vi /home/liao/soft/datax/job/db2_to_mysql.json
           "name": "mysqlwriter",
           "parameter": {
             "username": "root",
-            "password": "liao",
+            "password": "xxxxxx",
             "column": ["id", "PROC_DATE", "CTR_NO","INV_CODE","INV_NO","BU_CODE","CREATE_TIME","CREATE_BY"],
             "connection": [
               {
