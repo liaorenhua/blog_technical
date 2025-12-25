@@ -29,6 +29,14 @@ module.exports = () => {
         '03/06.md',
         '03/07.md'
       ]
+    },
+    {
+      title: '04 | Migration',
+      path: '/database/04/',
+      collapsable: true,
+      children: [
+        '04/DataX.md',
+      ]
     }
   ]
 }
