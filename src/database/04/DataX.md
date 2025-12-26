@@ -170,7 +170,7 @@ yum install -y python-pip
 pip install simplejson  # DataX常用依赖
 ```
 
-4. 单个配置文件配置多表失效问题   
+4. 单个配置文件配置多表失效问题(最强版本可以查看~\self)   
 编写: batch_sync_all.sh
 新建文件夹:   mkdir -p /home/liao/soft/datax/job/single_tables
 ```bash

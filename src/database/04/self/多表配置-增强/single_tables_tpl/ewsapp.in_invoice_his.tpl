@@ -26,7 +26,7 @@
             "connection": [
               {
                 "jdbcUrl": "{{MYSQL_JDBC_URL}}",
-                "table": ["IN_INVOICE_HIS"]
+                "table": ["ewsapp.IN_INVOICE_HIS"]
               }
             ],
             "writeMode": "insert",
