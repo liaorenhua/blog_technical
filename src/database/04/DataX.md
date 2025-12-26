@@ -82,7 +82,7 @@ python /home/liao/soft/datax/bin/datax.py -r rdbmsreader -w streamwriter
 ✅ 成功标志：控制台输出 RDBMSReader 的 JSON 配置模板，包含 jdbcUrl、username 等字段。
 
 
-步骤 5：编写 DB2→MySQL 同步任务（官方标准配置）   
+步骤 5：编写 DB2→MySQL 同步任务（官方标准配置-单配置版本-多配置详细见常见问题）   
 ```bash
 # 新建任务文件（实际本地详细见: E:\TechnicalProject\DataX\DataX\config）
 vi /home/liao/soft/datax/job/db2_to_mysql.json
@@ -138,7 +138,7 @@ vi /home/liao/soft/datax/job/db2_to_mysql.json
 步骤 6：执行同步任务  
 ```bash
 # 执行DB2→MySQL同步
-python /home/liao/soft/datax/bin/datax.py /home/liao/soft/datax/job/db2_to_mysql.json
+python /home/liao/soft/datax/bin/datax.py /home/liao/soft/datax/job/db2_to_mysql.json  > sync.log 2>&1
 ```
 ✅ 成功标志：日志显示总读取记录数=N、总写入记录数=N、任务退出状态码：0。  
 
@@ -170,6 +170,58 @@ yum install -y python-pip
 pip install simplejson  # DataX常用依赖
 ```
 
+4. 单个配置文件配置多表失效问题   
+编写: batch_sync_all.sh
+新建文件夹:   mkdir -p /home/liao/soft/datax/job/single_tables
+```bash
+#!/bin/bash
+# 定义单表配置目录和日志目录
+JOB_DIR="/home/liao/soft/datax/job/single_tables"
+LOG_DIR="/home/liao/soft/datax/logs/$(date +%Y%m%d)"
+
+# 在脚本开头添加
+if [ ! -d ${JOB_DIR} ]; then
+    echo "错误：单表配置目录 ${JOB_DIR} 不存在！"
+    exit 1
+fi
+
+# 创建日志目录（不存在则创建）
+mkdir -p ${LOG_DIR}
+
+# 遍历所有单表JSON配置，逐个执行同步
+for json_file in ${JOB_DIR}/*.json
+do
+    # 获取文件名（用于日志命名）
+    file_name=$(basename ${json_file})
+    log_file="${LOG_DIR}/${file_name%.json}_sync.log"
+
+    # 打印执行信息
+    echo -e "\n====================================="
+    echo "开始同步表：${file_name}"
+    echo "日志保存路径：${log_file}"
+    echo "====================================="
+
+    # 执行同步任务，并重定向日志
+    python /home/liao/soft/datax/bin/datax.py ${json_file} > ${log_file} 2>&1
+
+    # 判断任务执行结果
+    if [ $? -eq 0 ]; then
+        echo "${file_name} 同步成功！可查看日志确认详情。"
+    else
+        echo "${file_name} 同步失败！请查看日志：${log_file}"
+    fi
+
+    # 每张表同步后休眠1秒，避免数据库连接压力过大
+    sleep 1
+done
+
+echo -e "\n所有表同步任务执行完毕！总日志目录：${LOG_DIR}"
+```
+
+```bash
+chmod +x /home/liao/soft/datax/job/batch_sync_all.sh
+sh /home/liao/soft/datax/job/batch_sync_all.sh
+```
 
 
 
