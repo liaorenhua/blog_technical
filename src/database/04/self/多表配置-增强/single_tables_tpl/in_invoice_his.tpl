@@ -8,7 +8,7 @@
             "username": "{{DB2_USER}}",
             "password": "{{DB2_PWD}}",
             "column": ["id", "PROC_DATE", "CTR_NO", "INV_CODE", "INV_NO", "BU_CODE", "CREATE_TIME", "CREATE_BY"],
-            "where": "proc_date > '20251225'",
+            "where": "1=1",
             "connection": [
               {
                 "jdbcUrl": ["{{DB2_JDBC_URL}}"],
@@ -38,7 +38,7 @@
     ],
     "setting": {
       "speed": {
-        "channel": 1  
+        "channel": 1
       },
       "errorLimit": {
         "record": 0,

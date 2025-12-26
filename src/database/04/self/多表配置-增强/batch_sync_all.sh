@@ -4,6 +4,8 @@
 
 # ====================== 0. 统一定义 DataX 根目录（公共目录，仅需改这里） ======================
 DATAX_ROOT="/home/liao/soft/datax"
+# 并发数配置
+CONCURRENT_NUM=3
 
 # ====================== 1. 定义动态参数（统一管理，只需改这里） ======================
 # DB2 数据库配置
@@ -67,23 +69,26 @@ chmod 755 "${TMP_DIR}" "${LOG_DIR}"
 # 新增：批量赋予模板文件读权限，解决Permission denied问题
 chmod 644 "${TPL_DIR}"/*.tpl 2>/dev/null
 echo "[INFO] 前置检查完成，临时目录：${TMP_DIR}，日志目录：${LOG_DIR}"
+echo "[INFO] 并发数设置为：${CONCURRENT_NUM}"
 
-# ====================== 4. 批量处理模板+执行同步 ======================
+# ====================== 4. 批量处理模板+执行同步（支持并发） ======================
 # 初始化失败标记
 fail_tables=()
+success_tables=()
 
-for tpl_file in "${TPL_DIR}"/*.tpl; do
-    # 跳过非文件（避免空遍历匹配到*.tpl字面量）
-    [ -f "${tpl_file}" ] || continue
+# 创建临时文件来跟踪进程ID
+pid_file=$(mktemp)
 
-    # 解析文件名
-    tpl_name=$(basename "${tpl_file}")
-    json_name="${tpl_name%.tpl}.json"
-    tmp_json="${TMP_DIR}/${json_name}"
-    log_file="${LOG_DIR}/${json_name%.json}_sync.log"
+# 函数：处理单个模板文件
+process_template() {
+    local tpl_file=$1
+    local tpl_name=$(basename "${tpl_file}")
+    local json_name="${tpl_name%.tpl}.json"
+    local tmp_json="${TMP_DIR}/${json_name}"
+    local log_file="${LOG_DIR}/${json_name%.json}_sync.log"
 
     # ====================== 新增：记录同步开始时间 ======================
-    start_time=$(date +"%Y-%m-%d %H:%M:%S")
+    local start_time=$(date +"%Y-%m-%d %H:%M:%S")
     # 打印执行信息
     echo -e "\n====================================="
     echo "[INFO] 开始处理表：${json_name}（开始时间：${start_time}）"
@@ -93,10 +98,10 @@ for tpl_file in "${TPL_DIR}"/*.tpl; do
 
     # ====================== 核心：替换占位符（兼容特殊字符） ======================
     # 对密码做sed转义（处理&、/、|等特殊字符）
-    DB2_PWD_ESC=$(echo "${DB2_PWD}" | sed -e 's/[\/&|]/\\&/g')
-    MYSQL_PWD_ESC=$(echo "${MYSQL_PWD}" | sed -e 's/[\/&|]/\\&/g')
-    DB2_JDBC_URL_ESC=$(echo "${DB2_JDBC_URL}" | sed -e 's/[\/&|]/\\&/g')
-    MYSQL_JDBC_URL_ESC=$(echo "${MYSQL_JDBC_URL}" | sed -e 's/[\/&|]/\\&/g')
+    local DB2_PWD_ESC=$(echo "${DB2_PWD}" | sed -e 's/[\/&|]/\\&/g')
+    local MYSQL_PWD_ESC=$(echo "${MYSQL_PWD}" | sed -e 's/[\/&|]/\\&/g')
+    local DB2_JDBC_URL_ESC=$(echo "${DB2_JDBC_URL}" | sed -e 's/[\/&|]/\\&/g')
+    local MYSQL_JDBC_URL_ESC=$(echo "${MYSQL_JDBC_URL}" | sed -e 's/[\/&|]/\\&/g')
 
     # 替换占位符（用|作为分隔符，避免URL中/的转义）
     # 修复：清理DB2表名中EWSAPP后的多余空格（兼容多个空格）
@@ -110,11 +115,11 @@ for tpl_file in "${TPL_DIR}"/*.tpl; do
         "${tpl_file}" > "${tmp_json}"
 
     # 新增：检查sed执行结果，避免生成空文件
-    sed_exit_code=$?
+    local sed_exit_code=$?
     if [ ${sed_exit_code} -ne 0 ]; then
         echo "[ERROR] ${json_name} 模板替换失败（sed执行错误）！跳过"
-        fail_tables+=("${json_name}")
-        continue
+        echo "failed" > "${tmp_json}.status"
+        return 1
     fi
 
     # 检查临时文件是否生成 + 非空检查
@@ -124,8 +129,8 @@ for tpl_file in "${TPL_DIR}"/*.tpl; do
         echo "[DEBUG] 检查模板文件内容："
         head -n 5 "${tpl_file}"
         echo "[DEBUG] 检查生成的临时文件大小：$(stat -c%s "${tmp_json}" 2>/dev/null || echo 'File does not exist')"
-        fail_tables+=("${json_name}")
-        continue
+        echo "failed" > "${tmp_json}.status"
+        return 1
     fi
 
     # ====================== 新增：设置临时JSON文件权限，避免DataX读取失败 ======================
@@ -135,31 +140,74 @@ for tpl_file in "${TPL_DIR}"/*.tpl; do
     echo "[INFO] 开始同步 ${json_name}...（实时输出见终端，详细日志见${log_file}）"
     # 修复：兼容bash的PIPESTATUS，确保正确捕获DataX退出码
     ${PYTHON_CMD} "${DATAX_BIN}" "${tmp_json}" 2>&1 | tee "${log_file}"
-    sync_exit_code=${PIPESTATUS[0]}
+    local sync_exit_code=${PIPESTATUS[0]}
 
     # ====================== 新增：记录同步结束时间 ======================
-    end_time=$(date +"%Y-%m-%d %H:%M:%S")
+    local end_time=$(date +"%Y-%m-%d %H:%M:%S")
     # 判断同步结果
     if [ ${sync_exit_code} -eq 0 ]; then
         echo "[SUCCESS] ${json_name} 同步完成！（结束时间：${end_time}）"
+        echo "success" > "${tmp_json}.status"
         # 可选：同步成功后删除临时文件（如需保留排查，注释此行）
         rm -f "${tmp_json}"
+        rm -f "${tmp_json}.status"
+        return 0
     else
         echo "[ERROR] ${json_name} 同步失败！（结束时间：${end_time}）请查看日志：${log_file}"
-        fail_tables+=("${json_name}")
+        echo "failed" > "${tmp_json}.status"
+        return 1
     fi
+}
 
-    # 休眠1秒，降低数据库连接压力
-    # sleep 1
+# ====================== 并发执行逻辑 ======================
+for tpl_file in "${TPL_DIR}"/*.tpl; do
+    # 跳过非文件（避免空遍历匹配到*.tpl字面量）
+    [ -f "${tpl_file}" ] || continue
+
+    # 等待，确保并发数不超过限制
+    while [ $(jobs -r | wc -l) -ge ${CONCURRENT_NUM} ]; do
+        sleep 1
+    done
+
+    # 在后台执行处理函数
+    process_template "${tpl_file}" &
 done
+
+# 等待所有后台任务完成
+wait
 
 # ====================== 5. 执行结果汇总 ======================
 echo -e "\n====================================="
 echo "[SUMMARY] 所有任务执行完毕！"
+
+# 检查状态文件来确定哪些表成功或失败
+for tpl_file in "${TPL_DIR}"/*.tpl; do
+    [ -f "${tpl_file}" ] || continue
+    tpl_name=$(basename "${tpl_file}")
+    json_name="${tpl_name%.tpl}.json"
+    tmp_json="${TMP_DIR}/${json_name}"
+
+    if [ -f "${tmp_json}.status" ]; then
+        status=$(cat "${tmp_json}.status")
+        if [ "$status" = "failed" ]; then
+            fail_tables+=("${json_name}")
+        else
+            success_tables+=("${json_name}")
+        fi
+        rm -f "${tmp_json}.status"
+    else
+        success_tables+=("${json_name}")
+    fi
+done
+
 if [ ${#fail_tables[@]} -eq 0 ]; then
-    echo "[SUCCESS] 所有表同步成功！"
+    echo "[SUCCESS] 所有表同步成功！成功数量：${#success_tables[@]}"
     exit 0
 else
     echo "[ERROR] 以下表同步失败：${fail_tables[*]}"
+    echo "[INFO] 成功同步表数量：${#success_tables[@]}"
     exit 1
 fi
+
+# 清理临时文件
+rm -f "${pid_file}"
