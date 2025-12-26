@@ -9,7 +9,6 @@
             "password": "{{DB2_PWD}}",
             "column": ["LAST_PROC_DATE", "PROC_DATE", "NEXT_PROC_DATE", "STATUS", "UPDATE_TIME"],
             "where": "1=1",
-            "splitPk": "LAST_PROC_DATE",
             "connection": [
               {
                 "jdbcUrl": ["{{DB2_JDBC_URL}}"],
@@ -31,7 +30,8 @@
               }
             ],
             "writeMode": "insert",
-            "batchSize": 1000
+            "batchSize": 500,
+            "writeTimeout": 60000
           }
         }
       }
@@ -39,6 +39,10 @@
     "setting": {
       "speed": {
         "channel": 1
+      },
+      "errorLimit": {
+        "record": 0,
+        "percentage": 0.02
       }
     }
   }

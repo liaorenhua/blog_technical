@@ -9,7 +9,6 @@
             "password": "{{DB2_PWD}}",
             "column": ["id", "PROC_DATE", "CTR_NO", "INV_CODE", "INV_NO", "BU_CODE", "CREATE_TIME", "CREATE_BY"],
             "where": "proc_date > '20251225'",
-            "splitPk": "id",
             "connection": [
               {
                 "jdbcUrl": ["{{DB2_JDBC_URL}}"],
@@ -31,14 +30,19 @@
               }
             ],
             "writeMode": "insert",
-            "batchSize": 1000
+            "batchSize": 500,
+            "writeTimeout": 60000
           }
         }
       }
     ],
     "setting": {
       "speed": {
-        "channel": 2  
+        "channel": 1  
+      },
+      "errorLimit": {
+        "record": 0,
+        "percentage": 0.02
       }
     }
   }

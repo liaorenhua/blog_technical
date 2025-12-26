@@ -14,7 +14,6 @@
               "SHARD_TOTAL", "MACHINE_IP"
             ],
             "where": "1=1",
-            "splitPk": "ID",
             "connection": [
               {
                 "jdbcUrl": ["{{DB2_JDBC_URL}}"],
@@ -41,14 +40,19 @@
               }
             ],
             "writeMode": "insert",
-            "batchSize": 1000
+            "batchSize": 500,
+            "writeTimeout": 60000
           }
         }
       }
     ],
     "setting": {
       "speed": {
-        "channel": 2
+        "channel": 1
+      },
+      "errorLimit": {
+        "record": 0,
+        "percentage": 0.02
       }
     }
   }

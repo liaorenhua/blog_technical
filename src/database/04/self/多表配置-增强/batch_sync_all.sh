@@ -1,6 +1,6 @@
 #!/bin/bash
 # 关闭全局set -e，改为关键步骤手动判断退出码，提升容错性
-# set -e  
+# set -e
 
 # ====================== 0. 统一定义 DataX 根目录（公共目录，仅需改这里） ======================
 DATAX_ROOT="/home/liao/soft/datax"
@@ -106,9 +106,9 @@ for tpl_file in "${TPL_DIR}"/*.tpl; do
         -e "s|{{MYSQL_USER}}|${MYSQL_USER}|g" \
         -e "s|{{MYSQL_PWD}}|${MYSQL_PWD_ESC}|g" \
         -e "s|{{MYSQL_JDBC_URL}}|${MYSQL_JDBC_URL_ESC}|g" \
-        -e "s/EWSAPP[[:space:]]\+\./EWSAPP./g" \  # 修复：用POSIX标准[:space:]兼容更多空格类型
+        -e "s|EWSAPP[[:space:]]\+\.|EWSAPP.|g" \
         "${tpl_file}" > "${tmp_json}"
-    
+
     # 新增：检查sed执行结果，避免生成空文件
     sed_exit_code=$?
     if [ ${sed_exit_code} -ne 0 ]; then
@@ -120,6 +120,10 @@ for tpl_file in "${TPL_DIR}"/*.tpl; do
     # 检查临时文件是否生成 + 非空检查
     if [ ! -f "${tmp_json}" ] || [ ! -s "${tmp_json}" ]; then
         echo "[ERROR] ${json_name} 临时文件生成失败或为空！跳过"
+        # 输出调试信息
+        echo "[DEBUG] 检查模板文件内容："
+        head -n 5 "${tpl_file}"
+        echo "[DEBUG] 检查生成的临时文件大小：$(stat -c%s "${tmp_json}" 2>/dev/null || echo 'File does not exist')"
         fail_tables+=("${json_name}")
         continue
     fi
@@ -146,7 +150,7 @@ for tpl_file in "${TPL_DIR}"/*.tpl; do
     fi
 
     # 休眠1秒，降低数据库连接压力
-    sleep 1
+    # sleep 1
 done
 
 # ====================== 5. 执行结果汇总 ======================
