@@ -75,6 +75,7 @@ echo "[INFO] 并发数设置为：${CONCURRENT_NUM}"
 # 初始化失败标记
 fail_tables=()
 success_tables=()
+table_stats=()
 
 # 创建临时文件来跟踪进程ID
 pid_file=$(mktemp)
@@ -142,19 +143,48 @@ process_template() {
     ${PYTHON_CMD} "${DATAX_BIN}" "${tmp_json}" 2>&1 | tee "${log_file}"
     local sync_exit_code=${PIPESTATUS[0]}
 
-    # ====================== 新增：记录同步结束时间 ======================
-    local end_time=$(date +"%Y-%m-%d %H:%M:%S")
-    # 判断同步结果
+    # ====================== 新增：解析DataX日志获取统计信息 ======================
+    local total_records=0
+    local error_records=0
+    local start_time_sync=$(date +"%Y-%m-%d %H:%M:%S")
+    
     if [ ${sync_exit_code} -eq 0 ]; then
-        echo "[SUCCESS] ${json_name} 同步完成！（结束时间：${end_time}）"
-        echo "success" > "${tmp_json}.status"
+        # 从日志中提取统计信息
+        if [ -f "${log_file}" ]; then
+            # 修复：使用更准确的正则表达式来提取记录数
+            total_records_line=$(grep -o "Total [0-9]* records" "${log_file}" | tail -1)
+            if [ -n "$total_records_line" ]; then
+                total_records=$(echo "$total_records_line" | grep -o "[0-9]*")
+            fi
+            
+            error_records_line=$(grep -o "Error [0-9]* records" "${log_file}" | tail -1)
+            if [ -n "$error_records_line" ]; then
+                error_records=$(echo "$error_records_line" | grep -o "[0-9]*")
+            fi
+        fi
+        
+        echo "[SUCCESS] ${json_name} 同步完成！（结束时间：$(date +"%Y-%m-%d %H:%M:%S")）"
+        echo "success|${json_name}|${total_records}|${error_records}" > "${tmp_json}.status"
         # 可选：同步成功后删除临时文件（如需保留排查，注释此行）
         rm -f "${tmp_json}"
         rm -f "${tmp_json}.status"
         return 0
     else
-        echo "[ERROR] ${json_name} 同步失败！（结束时间：${end_time}）请查看日志：${log_file}"
-        echo "failed" > "${tmp_json}.status"
+        if [ -f "${log_file}" ]; then
+            # 修复：使用更准确的正则表达式来提取记录数
+            total_records_line=$(grep -o "Total [0-9]* records" "${log_file}" | tail -1)
+            if [ -n "$total_records_line" ]; then
+                total_records=$(echo "$total_records_line" | grep -o "[0-9]*")
+            fi
+            
+            error_records_line=$(grep -o "Error [0-9]* records" "${log_file}" | tail -1)
+            if [ -n "$error_records_line" ]; then
+                error_records=$(echo "$error_records_line" | grep -o "[0-9]*")
+            fi
+        fi
+        
+        echo "[ERROR] ${json_name} 同步失败！（结束时间：$(date +"%Y-%m-%d %H:%M:%S")）请查看日志：${log_file}"
+        echo "failed|${json_name}|${total_records}|${error_records}" > "${tmp_json}.status"
         return 1
     fi
 }
@@ -188,17 +218,69 @@ for tpl_file in "${TPL_DIR}"/*.tpl; do
     tmp_json="${TMP_DIR}/${json_name}"
 
     if [ -f "${tmp_json}.status" ]; then
-        status=$(cat "${tmp_json}.status")
+        status_line=$(cat "${tmp_json}.status")
+        IFS='|' read -r status table_name total_records error_records <<< "$status_line"
+        
         if [ "$status" = "failed" ]; then
-            fail_tables+=("${json_name}")
+            fail_tables+=("${table_name}")
         else
-            success_tables+=("${json_name}")
+            success_tables+=("${table_name}")
         fi
+        
+        # 记录表统计信息
+        table_stats+=("$table_name|$total_records|$error_records|$status")
         rm -f "${tmp_json}.status"
     else
         success_tables+=("${json_name}")
+        table_stats+=("$json_name|0|0|success")
     fi
 done
+
+# ====================== 6. 生成详细报表 ======================
+echo -e "\n====================================="
+echo "[REPORT] 数据同步报表"
+echo "====================================="
+echo "同步时间: $(date)"
+echo "总表数量: $((${#success_tables[@]} + ${#fail_tables[@]}))"
+echo "成功数量: ${#success_tables[@]}"
+echo "失败数量: ${#fail_tables[@]}"
+echo "====================================="
+echo "详细统计:"
+printf "%-30s %-15s %-15s %-10s\n" "表名" "总记录数" "错误记录数" "状态"
+echo "------------------------------------"
+for stat in "${table_stats[@]}"; do
+    IFS='|' read -r table_name total_records error_records status <<< "$stat"
+    printf "%-30s %-15s %-15s %-10s\n" "$table_name" "$total_records" "$error_records" "$status"
+done
+echo "====================================="
+
+# 生成汇总日志文件
+report_file="${LOG_DIR}/sync_report_$(date +%Y%m%d_%H%M%S).log"
+{
+    echo "数据同步任务汇总报告"
+    echo "==================="
+    echo "执行时间: $(date)"
+    echo "总表数量: $((${#success_tables[@]} + ${#fail_tables[@]}))"
+    echo "成功数量: ${#success_tables[@]}"
+    echo "失败数量: ${#fail_tables[@]}"
+    echo ""
+    echo "详细统计:"
+    printf "%-30s %-15s %-15s %-10s\n" "表名" "总记录数" "错误记录数" "状态"
+    echo "------------------------------------"
+    for stat in "${table_stats[@]}"; do
+        IFS='|' read -r table_name total_records error_records status <<< "$stat"
+        printf "%-30s %-15s %-15s %-10s\n" "$table_name" "$total_records" "$error_records" "$status"
+    done
+    echo ""
+    if [ ${#fail_tables[@]} -gt 0 ]; then
+        echo "失败的表:"
+        for fail_table in "${fail_tables[@]}"; do
+            echo "  - $fail_table"
+        done
+    fi
+} > "$report_file"
+
+echo "报表已保存至: $report_file"
 
 if [ ${#fail_tables[@]} -eq 0 ]; then
     echo "[SUCCESS] 所有表同步成功！成功数量：${#success_tables[@]}"
@@ -210,4 +292,4 @@ else
 fi
 
 # 清理临时文件
-rm -f "${pid_file}"
+# rm -f "${pid_file}"
