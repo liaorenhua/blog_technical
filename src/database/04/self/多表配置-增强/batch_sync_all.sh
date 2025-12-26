@@ -10,13 +10,13 @@ CONCURRENT_NUM=3
 # ====================== 1. 定义动态参数（统一管理，只需改这里） ======================
 # DB2 数据库配置
 DB2_USER="db2inst1"
-DB2_PWD="liao"
-DB2_JDBC_URL="jdbc:db2://192.168.42.12:60000/RWS_TEST"
+DB2_PWD="xxxx"
+DB2_JDBC_URL="jdbc:db2://xxx.xxx.xx.12:60000/RWS_TEST"
 
 # MySQL 数据库配置
 MYSQL_USER="root"
-MYSQL_PWD="liao"
-MYSQL_JDBC_URL="jdbc:mysql://192.168.42.12:3316/ewsapp?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&connectTimeout=30000&socketTimeout=60000&useServerPrepStmts=false&rewriteBatchedStatements=true&allowMultiQueries=true&sessionVariables=sql_mode='STRICT_TRANS_TABLES,NO_ZERO_DATE,NO_ZERO_IN_DATE,ERROR_FOR_DIVISION_BY_ZERO'"
+MYSQL_PWD="xxxx"
+MYSQL_JDBC_URL="jdbc:mysql://xxx.xxx.xx.12:3316/ewsapp?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&connectTimeout=30000&socketTimeout=60000&useServerPrepStmts=false&rewriteBatchedStatements=true&allowMultiQueries=true&sessionVariables=sql_mode='STRICT_TRANS_TABLES,NO_ZERO_DATE,NO_ZERO_IN_DATE,ERROR_FOR_DIVISION_BY_ZERO'"
 
 # 可选：指定DataX兼容的Python2路径（关键！根据实际环境调整）
 PYTHON_CMD="/usr/bin/python"
@@ -80,19 +80,20 @@ table_stats=()
 # 创建临时文件来跟踪进程ID
 pid_file=$(mktemp)
 
-# 函数：处理单个模板文件
+# 函数：处理单个模板文件（最终版：修复失败场景解析）
 process_template() {
     local tpl_file=$1
     local tpl_name=$(basename "${tpl_file}")
     local json_name="${tpl_name%.tpl}.json"
+    local table_name="${json_name%.json}"  # 提取纯表名（去掉.json）
     local tmp_json="${TMP_DIR}/${json_name}"
     local log_file="${LOG_DIR}/${json_name%.json}_sync.log"
 
-    # ====================== 新增：记录同步开始时间 ======================
+    # ====================== 记录同步开始时间 ======================
     local start_time=$(date +"%Y-%m-%d %H:%M:%S")
-    # 打印执行信息
+    # 打印执行信息（明确关联表名）
     echo -e "\n====================================="
-    echo "[INFO] 开始处理表：${json_name}（开始时间：${start_time}）"
+    echo "[INFO] 开始处理表：${table_name}（JSON文件：${json_name}，开始时间：${start_time}）"
     echo "[INFO] 临时JSON：${tmp_json}"
     echo "[INFO] 日志文件：${log_file}"
     echo "====================================="
@@ -105,7 +106,6 @@ process_template() {
     local MYSQL_JDBC_URL_ESC=$(echo "${MYSQL_JDBC_URL}" | sed -e 's/[\/&|]/\\&/g')
 
     # 替换占位符（用|作为分隔符，避免URL中/的转义）
-    # 修复：清理DB2表名中EWSAPP后的多余空格（兼容多个空格）
     sed -e "s|{{DB2_USER}}|${DB2_USER}|g" \
         -e "s|{{DB2_PWD}}|${DB2_PWD_ESC}|g" \
         -e "s|{{DB2_JDBC_URL}}|${DB2_JDBC_URL_ESC}|g" \
@@ -115,75 +115,85 @@ process_template() {
         -e "s|EWSAPP[[:space:]]\+\.|EWSAPP.|g" \
         "${tpl_file}" > "${tmp_json}"
 
-    # 新增：检查sed执行结果，避免生成空文件
+    # 检查sed执行结果，避免生成空文件
     local sed_exit_code=$?
     if [ ${sed_exit_code} -ne 0 ]; then
-        echo "[ERROR] ${json_name} 模板替换失败（sed执行错误）！跳过"
-        echo "failed" > "${tmp_json}.status"
+        echo "[ERROR] ${table_name} 模板替换失败（sed执行错误）！跳过"
+        echo "failed|${json_name}|0|0" > "${tmp_json}.status"
         return 1
     fi
 
     # 检查临时文件是否生成 + 非空检查
     if [ ! -f "${tmp_json}" ] || [ ! -s "${tmp_json}" ]; then
-        echo "[ERROR] ${json_name} 临时文件生成失败或为空！跳过"
-        # 输出调试信息
-        echo "[DEBUG] 检查模板文件内容："
+        echo "[ERROR] ${table_name} 临时文件生成失败或为空！跳过"
+        echo "[DEBUG] 模板文件内容（前5行）："
         head -n 5 "${tpl_file}"
-        echo "[DEBUG] 检查生成的临时文件大小：$(stat -c%s "${tmp_json}" 2>/dev/null || echo 'File does not exist')"
-        echo "failed" > "${tmp_json}.status"
+        echo "[DEBUG] 临时文件大小：$(stat -c%s "${tmp_json}" 2>/dev/null || echo '不存在')"
+        echo "failed|${json_name}|0|0" > "${tmp_json}.status"
         return 1
     fi
 
-    # ====================== 新增：设置临时JSON文件权限，避免DataX读取失败 ======================
+    # 设置临时JSON文件权限
     chmod 644 "${tmp_json}"
 
-    # ====================== 执行DataX同步（保留实时输出+记录日志） ======================
-    echo "[INFO] 开始同步 ${json_name}...（实时输出见终端，详细日志见${log_file}）"
-    # 修复：兼容bash的PIPESTATUS，确保正确捕获DataX退出码
+    # ====================== 执行DataX同步 ======================
+    echo "[INFO] 开始同步 ${table_name}...（实时输出见终端，详细日志见${log_file}）"
     ${PYTHON_CMD} "${DATAX_BIN}" "${tmp_json}" 2>&1 | tee "${log_file}"
     local sync_exit_code=${PIPESTATUS[0]}
 
-    # ====================== 新增：解析DataX日志获取统计信息 ======================
+    # ====================== 最终版：修复失败场景的记录数提取 ======================
     local total_records=0
     local error_records=0
-    local start_time_sync=$(date +"%Y-%m-%d %H:%M:%S")
-    
-    if [ ${sync_exit_code} -eq 0 ]; then
-        # 从日志中提取统计信息
-        if [ -f "${log_file}" ]; then
-            # 修复：使用更准确的正则表达式来提取记录数
-            total_records_line=$(grep -o "Total [0-9]* records" "${log_file}" | tail -1)
-            if [ -n "$total_records_line" ]; then
-                total_records=$(echo "$total_records_line" | grep -o "[0-9]*")
-            fi
-            
-            error_records_line=$(grep -o "Error [0-9]* records" "${log_file}" | tail -1)
-            if [ -n "$error_records_line" ]; then
-                error_records=$(echo "$error_records_line" | grep -o "[0-9]*")
+    sleep 1  # 确保日志完全写入
+
+    if [ -f "${log_file}" ]; then
+        echo "[DEBUG] ===== ${table_name} 日志解析开始 ====="
+
+        # ========== 修复点1：精准提取Total后的数字（适配所有日志格式） ==========
+        # 步骤1：过滤出包含"Total X records"的行
+        total_line=$(grep -E "Total [0-9]+ records" "${log_file}" | tail -1)
+        if [ -n "$total_line" ]; then
+            # 步骤2：用正则提取Total后的数字（不管字段位置）
+            if [[ "$total_line" =~ Total[[:space:]]+([0-9]+)[[:space:]]+records ]]; then
+                total_records=${BASH_REMATCH[1]}
+                echo "[DEBUG] ${table_name} - Total记录数：${total_records}"
             fi
         fi
-        
-        echo "[SUCCESS] ${json_name} 同步完成！（结束时间：$(date +"%Y-%m-%d %H:%M:%S")）"
+
+        # ========== 修复点2：精准提取Error后的数字（失败场景关键） ==========
+        error_line=$(grep -E "Error [0-9]+ records" "${log_file}" | tail -1)
+        if [ -n "$error_line" ]; then
+            # 用正则提取Error后的数字
+            if [[ "$error_line" =~ Error[[:space:]]+([0-9]+)[[:space:]]+records ]]; then
+                error_records=${BASH_REMATCH[1]}
+                echo "[DEBUG] ${table_name} - Error记录数：${error_records}"
+            fi
+        fi
+
+        # ========== 兜底验证：提取"读出记录总数: X"（兼容成功场景） ==========
+        if [ $total_records -eq 0 ]; then
+            read_total_line=$(grep -E "读出记录总数\s+:\s+[0-9]+" "${log_file}")
+            if [ -n "$read_total_line" ]; then
+                read_total=$(echo "$read_total_line" | awk -F ':' '{gsub(/ /,"",$2);print $2}')
+                if [[ "$read_total" =~ ^[0-9]+$ ]]; then
+                    total_records=$read_total
+                    echo "[DEBUG] ${table_name} - 兜底提取读出记录数：${total_records}"
+                fi
+            fi
+        fi
+
+        echo "[DEBUG] ${table_name} - 最终确认：总记录数=${total_records}，错误记录数=${error_records}"
+        echo "[DEBUG] ===== ${table_name} 日志解析结束 ====="
+    fi
+
+    # ====================== 状态记录（绑定表名和记录数） ======================
+    if [ ${sync_exit_code} -eq 0 ]; then
+        echo "[SUCCESS] ${table_name} 同步完成！（结束时间：$(date +"%Y-%m-%d %H:%M:%S")）"
         echo "success|${json_name}|${total_records}|${error_records}" > "${tmp_json}.status"
-        # 可选：同步成功后删除临时文件（如需保留排查，注释此行）
-        rm -f "${tmp_json}"
-        rm -f "${tmp_json}.status"
+        rm -f "${tmp_json}"  # 只删JSON，保留status文件
         return 0
     else
-        if [ -f "${log_file}" ]; then
-            # 修复：使用更准确的正则表达式来提取记录数
-            total_records_line=$(grep -o "Total [0-9]* records" "${log_file}" | tail -1)
-            if [ -n "$total_records_line" ]; then
-                total_records=$(echo "$total_records_line" | grep -o "[0-9]*")
-            fi
-            
-            error_records_line=$(grep -o "Error [0-9]* records" "${log_file}" | tail -1)
-            if [ -n "$error_records_line" ]; then
-                error_records=$(echo "$error_records_line" | grep -o "[0-9]*")
-            fi
-        fi
-        
-        echo "[ERROR] ${json_name} 同步失败！（结束时间：$(date +"%Y-%m-%d %H:%M:%S")）请查看日志：${log_file}"
+        echo "[ERROR] ${table_name} 同步失败！（结束时间：$(date +"%Y-%m-%d %H:%M:%S")）请查看日志：${log_file}"
         echo "failed|${json_name}|${total_records}|${error_records}" > "${tmp_json}.status"
         return 1
     fi
@@ -191,52 +201,51 @@ process_template() {
 
 # ====================== 并发执行逻辑 ======================
 for tpl_file in "${TPL_DIR}"/*.tpl; do
-    # 跳过非文件（避免空遍历匹配到*.tpl字面量）
     [ -f "${tpl_file}" ] || continue
 
-    # 等待，确保并发数不超过限制
+    # 控制并发数
     while [ $(jobs -r | wc -l) -ge ${CONCURRENT_NUM} ]; do
         sleep 1
     done
 
-    # 在后台执行处理函数
+    # 后台执行（绑定当前模板文件）
     process_template "${tpl_file}" &
 done
 
 # 等待所有后台任务完成
 wait
 
-# ====================== 5. 执行结果汇总 ======================
+# ====================== 5. 结果汇总（精准关联表名和记录数） ======================
 echo -e "\n====================================="
 echo "[SUMMARY] 所有任务执行完毕！"
 
-# 检查状态文件来确定哪些表成功或失败
 for tpl_file in "${TPL_DIR}"/*.tpl; do
     [ -f "${tpl_file}" ] || continue
     tpl_name=$(basename "${tpl_file}")
     json_name="${tpl_name%.tpl}.json"
+    table_name="${json_name%.json}"
     tmp_json="${TMP_DIR}/${json_name}"
 
     if [ -f "${tmp_json}.status" ]; then
-        status_line=$(cat "${tmp_json}.status")
-        IFS='|' read -r status table_name total_records error_records <<< "$status_line"
-        
+        echo "[DEBUG] 读取 ${table_name} 状态文件："
+        cat "${tmp_json}.status"
+
+        IFS='|' read -r status jname total error <<< "$(cat "${tmp_json}.status")"
         if [ "$status" = "failed" ]; then
             fail_tables+=("${table_name}")
         else
             success_tables+=("${table_name}")
         fi
-        
-        # 记录表统计信息
-        table_stats+=("$table_name|$total_records|$error_records|$status")
-        rm -f "${tmp_json}.status"
+        table_stats+=("${table_name}|${total}|${error}|${status}")
+        rm -f "${tmp_json}.status"  # 汇总后删除
     else
-        success_tables+=("${json_name}")
-        table_stats+=("$json_name|0|0|success")
+        echo "[WARNING] ${table_name} 无状态文件，默认统计为0"
+        success_tables+=("${table_name}")
+        table_stats+=("${table_name}|0|0|success")
     fi
 done
 
-# ====================== 6. 生成详细报表 ======================
+# ====================== 6. 生成最终报表（清晰显示表名+记录数） ======================
 echo -e "\n====================================="
 echo "[REPORT] 数据同步报表"
 echo "====================================="
@@ -245,16 +254,16 @@ echo "总表数量: $((${#success_tables[@]} + ${#fail_tables[@]}))"
 echo "成功数量: ${#success_tables[@]}"
 echo "失败数量: ${#fail_tables[@]}"
 echo "====================================="
-echo "详细统计:"
+echo "详细统计（表名对应实际同步的DB2表：EWSAPP.表名）："
 printf "%-30s %-15s %-15s %-10s\n" "表名" "总记录数" "错误记录数" "状态"
 echo "------------------------------------"
 for stat in "${table_stats[@]}"; do
-    IFS='|' read -r table_name total_records error_records status <<< "$stat"
-    printf "%-30s %-15s %-15s %-10s\n" "$table_name" "$total_records" "$error_records" "$status"
+    IFS='|' read -r tname total error status <<< "$stat"
+    printf "%-30s %-15s %-15s %-10s\n" "$tname" "$total" "$error" "$status"
 done
 echo "====================================="
 
-# 生成汇总日志文件
+# 保存报表到日志文件
 report_file="${LOG_DIR}/sync_report_$(date +%Y%m%d_%H%M%S).log"
 {
     echo "数据同步任务汇总报告"
@@ -264,20 +273,13 @@ report_file="${LOG_DIR}/sync_report_$(date +%Y%m%d_%H%M%S).log"
     echo "成功数量: ${#success_tables[@]}"
     echo "失败数量: ${#fail_tables[@]}"
     echo ""
-    echo "详细统计:"
+    echo "详细统计（表名对应实际同步的DB2表：EWSAPP.表名）："
     printf "%-30s %-15s %-15s %-10s\n" "表名" "总记录数" "错误记录数" "状态"
     echo "------------------------------------"
     for stat in "${table_stats[@]}"; do
-        IFS='|' read -r table_name total_records error_records status <<< "$stat"
-        printf "%-30s %-15s %-15s %-10s\n" "$table_name" "$total_records" "$error_records" "$status"
+        IFS='|' read -r tname total error status <<< "$stat"
+        printf "%-30s %-15s %-15s %-10s\n" "$tname" "$total" "$error" "$status"
     done
-    echo ""
-    if [ ${#fail_tables[@]} -gt 0 ]; then
-        echo "失败的表:"
-        for fail_table in "${fail_tables[@]}"; do
-            echo "  - $fail_table"
-        done
-    fi
 } > "$report_file"
 
 echo "报表已保存至: $report_file"
@@ -292,4 +294,4 @@ else
 fi
 
 # 清理临时文件
-# rm -f "${pid_file}"
+#rm -f "${pid_file}"
