@@ -14,7 +14,7 @@ DB2_JDBC_URL="jdbc:db2://192.168.42.12:60000/RWS_TEST"
 # MySQL 数据库配置
 MYSQL_USER="root"
 MYSQL_PWD="liao"
-MYSQL_JDBC_URL="jdbc:mysql://192.168.42.12:3316/ewsapp?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true"
+MYSQL_JDBC_URL="jdbc:mysql://192.168.42.12:3316/ewsapp?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&connectTimeout=30000&socketTimeout=60000&useServerPrepStmts=false&rewriteBatchedStatements=true&allowMultiQueries=true&sessionVariables=sql_mode='STRICT_TRANS_TABLES,NO_ZERO_DATE,NO_ZERO_IN_DATE,ERROR_FOR_DIVISION_BY_ZERO'"
 
 # 可选：指定DataX兼容的Python2路径（关键！根据实际环境调整）
 PYTHON_CMD="/usr/bin/python"
