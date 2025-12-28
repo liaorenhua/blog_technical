@@ -29,7 +29,8 @@ export const zhNavbar = navbar([
         children: [
           { text: "Mysql", icon: "ellipsis", link: "01/" },
           { text: "Redis", icon: "ellipsis", link: "02/" },
-          { text: "Mysql", icon: "ellipsis", link: "03/" },
+          { text: "extend", icon: "ellipsis", link: "03/" },
+          { text: "DataX", icon: "ellipsis", link: "04/" },
         ],
       },
       // {
