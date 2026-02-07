@@ -89,6 +89,26 @@ export const zhNavbar = navbar([
             // },
         ],
     },
+    // 2026年2月7日   这个是导航条 关联的菜单
+    {
+        text: "AI",
+        icon: "code",
+        children: [
+            {
+                text: "笔记",
+                icon: "code",
+                children: ["/lm/"],
+            },
+            // {
+            //   // text: "产品设计",
+            //   children: ["/design/", "/linux/"],
+            // },
+            // {
+            //   // text: "后端运维",
+            //   children: ["/linux/"],
+            // },
+        ],
+    },
 
 
     // 下载链接
