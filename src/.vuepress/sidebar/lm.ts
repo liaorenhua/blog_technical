@@ -7,7 +7,7 @@ export const lm = arraySidebar([
         icon: "info",
         link: "intro/",
         prefix: "intro/",
-        children: ["intro"],
+        children: ["intro", "concept"],
     },
     {
         text: "文件结构",

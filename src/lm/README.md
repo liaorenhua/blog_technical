@@ -11,6 +11,7 @@ star: true
 - [Linux 介绍](intro/README.md)
 
   - [Linux 介绍](intro/intro.md)
+  - [基本概念](intro/concept.md)
 
 - [Linux 文件](file/README.md)
 
